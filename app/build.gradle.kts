@@ -16,10 +16,16 @@ android {
         versionCode = 5
         versionName = "0.4.1"
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 }
 
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2026.06.00"))
+
     implementation("androidx.activity:activity-compose:1.12.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -28,5 +34,6 @@ dependencies {
 
     implementation(platform("io.github.jan-tennert.supabase:bom:3.8.0"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
+
     implementation("io.ktor:ktor-client-android:3.3.0")
 }
