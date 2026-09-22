@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.jan.supabase.auth.Auth
@@ -26,10 +27,16 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
-private const val SUPABASE_URL = "https://ebsmxiywavrgzydzmgxi.supabase.co"
-private const val SUPABASE_KEY = "sb_publishable_sfyl1NWIgWGLFp6D50PtVg_4wX7m_KX"
+private const val SUPABASE_URL =
+    "https://ebsmxiywavrgzydzmgxi.supabase.co"
 
-private val supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_KEY) {
+private const val SUPABASE_KEY =
+    "sb_publishable_sfyl1NWIgWGLFp6D50PtVg_4wX7m_KX"
+
+private val supabase = createSupabaseClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+) {
     install(Auth)
 }
 
@@ -43,23 +50,26 @@ private data class Note(
 private class NoteStore(context: Context) {
 
     private val prefs =
-        context.getSharedPreferences("ryxen_pocket", Context.MODE_PRIVATE)
+        context.getSharedPreferences(
+            "ryxen_pocket",
+            Context.MODE_PRIVATE
+        )
 
     fun load(): List<Note> = runCatching {
 
-        val a = JSONArray(
-            prefs.getString("notes", "[]")
+        val array = JSONArray(
+            prefs.getString("notes", "[]") ?: "[]"
         )
 
-        List(a.length()) { i ->
+        List(array.length()) { index ->
 
-            val o = a.getJSONObject(i)
+            val obj = array.getJSONObject(index)
 
             Note(
-                o.getString("id"),
-                o.getString("title"),
-                o.getString("body"),
-                o.optBoolean("favorite")
+                id = obj.getString("id"),
+                title = obj.getString("title"),
+                body = obj.getString("body"),
+                favorite = obj.optBoolean("favorite", false)
             )
         }
 
@@ -67,24 +77,22 @@ private class NoteStore(context: Context) {
 
     fun save(notes: List<Note>) {
 
-        val a = JSONArray()
+        val array = JSONArray()
 
-        notes.forEach { n ->
+        notes.forEach { note ->
 
-            a.put(
+            array.put(
                 JSONObject().apply {
-
-                    put("id", n.id)
-                    put("title", n.title)
-                    put("body", n.body)
-                    put("favorite", n.favorite)
-
+                    put("id", note.id)
+                    put("title", note.title)
+                    put("body", note.body)
+                    put("favorite", note.favorite)
                 }
             )
         }
 
         prefs.edit()
-            .putString("notes", a.toString())
+            .putString("notes", array.toString())
             .apply()
     }
 }
@@ -102,29 +110,51 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun RyxenPocketApp(context: Context) {
+private fun RyxenPocketApp(context: Context) {
 
-    var mode by remember { mutableStateOf("start") }
+    var mode by remember {
+        mutableStateOf("start")
+    }
 
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
-    var repeatPassword by remember { mutableStateOf("") }
+    var email by remember {
+        mutableStateOf("")
+    }
 
-    var busy by remember { mutableStateOf(false) }
-    var message by remember { mutableStateOf("") }
+    var password by remember {
+        mutableStateOf("")
+    }
 
-    var loggedIn by remember { mutableStateOf(false) }
-    var sessionChecked by remember { mutableStateOf(false) }
+    var username by remember {
+        mutableStateOf("")
+    }
+
+    var repeatPassword by remember {
+        mutableStateOf("")
+    }
+
+    var busy by remember {
+        mutableStateOf(false)
+    }
+
+    var message by remember {
+        mutableStateOf("")
+    }
+
+    var loggedIn by remember {
+        mutableStateOf(false)
+    }
+
+    var sessionChecked by remember {
+        mutableStateOf(false)
+    }
 
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
 
-        loggedIn =
-            runCatching {
-                supabase.auth.currentSessionOrNull() != null
-            }.getOrDefault(false)
+        loggedIn = runCatching {
+            supabase.auth.currentSessionOrNull() != null
+        }.getOrDefault(false)
 
         sessionChecked = true
     }
@@ -141,178 +171,191 @@ fun RyxenPocketApp(context: Context) {
             color = Color(0xFFFFF4FA)
         ) {
 
-            if (!sessionChecked) {
+            when {
 
-                Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                !sessionChecked -> {
 
-                    Text(
-                        "Мяу~ загружаем Ryxen Pocket 🐾"
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Text(
+                            text = "Мяу~ загружаем Ryxen Pocket 🐾"
+                        )
+                    }
+                }
+
+                loggedIn -> {
+
+                    PocketShell(
+                        context = context,
+                        onLogout = {
+
+                            scope.launch {
+
+                                runCatching {
+                                    supabase.auth.signOut()
+                                }
+
+                                loggedIn = false
+                                mode = "start"
+                                message = "Ты вышел из аккаунта 🐾"
+                            }
+                        }
                     )
                 }
 
-            } else if (loggedIn) {
+                else -> {
 
-                PocketShell(
-                    onLogout = {
+                    AuthScreen(
+                        mode = mode,
+                        email = email,
+                        password = password,
+                        username = username,
+                        repeatPassword = repeatPassword,
+                        busy = busy,
+                        message = message,
 
-                        scope.launch {
-
-                            runCatching {
-                                supabase.auth.signOut()
-                            }
-
-                            loggedIn = false
-                            mode = "start"
-                            message = "Ты вышел из аккаунта 🐾"
-                        }
-                    },
-                    context = context
-                )
-
-            } else {
-
-                AuthScreen(
-                    mode = mode,
-                    email = email,
-                    password = password,
-                    username = username,
-                    repeatPassword = repeatPassword,
-                    busy = busy,
-                    message = message,
-
-                    onModeChange = {
-                        mode = it
-                        message = ""
-                    },
-
-                    onEmailChange = {
-                        email = it
-                    },
-
-                    onPasswordChange = {
-                        password = it
-                    },
-
-                    onUsernameChange = {
-                        username = it
-                    },
-
-                    onRepeatPasswordChange = {
-                        repeatPassword = it
-                    },
-
-                    onLogin = {
-
-                        scope.launch {
-
-                            busy = true
+                        onModeChange = {
+                            mode = it
                             message = ""
+                        },
 
-                            try {
+                        onEmailChange = {
+                            email = it
+                        },
 
-                                supabase.auth.signInWith(Email) {
+                        onPasswordChange = {
+                            password = it
+                        },
 
-                                    this.email = email.trim()
-                                    this.password = password
-                                }
+                        onUsernameChange = {
+                            username = it
+                        },
 
-                                loggedIn = true
+                        onRepeatPasswordChange = {
+                            repeatPassword = it
+                        },
 
-                            } catch (e: Exception) {
+                        onLogin = {
 
-                                message =
-                                    e.message
-                                        ?: "Не удалось войти 😿"
+                            scope.launch {
 
-                            } finally {
+                                busy = true
+                                message = ""
 
-                                busy = false
-                            }
-                        }
-                    },
+                                try {
 
-                    onRegister = {
-
-                        scope.launch {
-
-                            busy = true
-                            message = ""
-
-                            try {
-
-                                if (email.trim().isEmpty() ||
-                                    password.isEmpty()
-                                ) {
-
-                                    message =
-                                        "Заполни email и пароль ✉️"
-
-                                } else if (
-                                    username.trim().length !in 3..32
-                                ) {
-
-                                    message =
-                                        "Имя пользователя: от 3 до 32 символов."
-
-                                } else if (
-                                    !email.trim().contains("@")
-                                ) {
-
-                                    message =
-                                        "Проверь email ✉️"
-
-                                } else if (
-                                    password.length < 6
-                                ) {
-
-                                    message =
-                                        "Пароль должен содержать минимум 6 символов."
-
-                                } else if (
-                                    password != repeatPassword
-                                ) {
-
-                                    message =
-                                        "Пароли не совпадают 😿"
-
-                                } else {
-
-                                    supabase.auth.signUpWith(Email) {
+                                    supabase.auth.signInWith(Email) {
 
                                         this.email = email.trim()
                                         this.password = password
-
-                                        data =
-                                            buildJsonObject {
-                                                put(
-                                                    "username",
-                                                    username.trim()
-                                                )
-                                            }
                                     }
 
+                                    loggedIn = true
+
+                                } catch (e: Exception) {
+
                                     message =
-                                        "Аккаунт создан! Проверь email, если требуется подтверждение ✨"
+                                        e.message
+                                            ?: "Не удалось войти 😿"
 
-                                    mode = "login"
+                                } finally {
+
+                                    busy = false
                                 }
+                            }
+                        },
 
-                            } catch (e: Exception) {
+                        onRegister = {
 
-                                message =
-                                    e.message
-                                        ?: "Не удалось зарегистрироваться 😿"
+                            scope.launch {
 
-                            } finally {
+                                busy = true
+                                message = ""
 
-                                busy = false
+                                try {
+
+                                    val cleanEmail =
+                                        email.trim()
+
+                                    val cleanUsername =
+                                        username.trim()
+
+                                    when {
+
+                                        cleanEmail.isEmpty() ||
+                                            password.isEmpty() -> {
+
+                                            message =
+                                                "Заполни email и пароль ✉️"
+                                        }
+
+                                        cleanUsername.length !in 3..32 -> {
+
+                                            message =
+                                                "Имя пользователя: от 3 до 32 символов."
+                                        }
+
+                                        !cleanEmail.contains("@") -> {
+
+                                            message =
+                                                "Проверь email ✉️"
+                                        }
+
+                                        password.length < 6 -> {
+
+                                            message =
+                                                "Пароль должен содержать минимум 6 символов."
+                                        }
+
+                                        password != repeatPassword -> {
+
+                                            message =
+                                                "Пароли не совпадают 😿"
+                                        }
+
+                                        else -> {
+
+                                            supabase.auth.signUpWith(Email) {
+
+                                                this.email =
+                                                    cleanEmail
+
+                                                this.password =
+                                                    password
+
+                                                data =
+                                                    buildJsonObject {
+                                                        put(
+                                                            "username",
+                                                            cleanUsername
+                                                        )
+                                                    }
+                                            }
+
+                                            message =
+                                                "Аккаунт создан! Проверь email, если требуется подтверждение ✨"
+
+                                            mode = "login"
+                                        }
+                                    }
+
+                                } catch (e: Exception) {
+
+                                    message =
+                                        e.message
+                                            ?: "Не удалось зарегистрироваться 😿"
+
+                                } finally {
+
+                                    busy = false
+                                }
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
@@ -339,26 +382,30 @@ private fun AuthScreen(
 ) {
 
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
 
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment =
+            Alignment.CenterHorizontally,
 
-        verticalArrangement = Arrangement.Center
+        verticalArrangement =
+            Arrangement.Center
     ) {
 
         Text(
-            "🐾 Ryxen Pocket",
+            text = "🐾 Ryxen Pocket",
             fontSize = 30.sp
         )
 
         Text(
-            "мяу~ твой маленький уголок :3",
+            text = "мяу~ твой маленький уголок :3",
             color = Color(0xFF7B6B80)
         )
 
-        Spacer(Modifier.height(28.dp))
+        Spacer(
+            modifier = Modifier.height(28.dp)
+        )
 
         when (mode) {
 
@@ -374,7 +421,9 @@ private fun AuthScreen(
                     Text("✨ Войти")
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
 
                 OutlinedButton(
                     onClick = {
@@ -392,16 +441,16 @@ private fun AuthScreen(
                 AuthTitle("Вход")
 
                 Field(
-                    "Email",
-                    email,
-                    onEmailChange
+                    label = "Email",
+                    value = email,
+                    change = onEmailChange
                 )
 
                 Field(
-                    "Пароль",
-                    password,
-                    onPasswordChange,
-                    true
+                    label = "Пароль",
+                    value = password,
+                    change = onPasswordChange,
+                    password = true
                 )
 
                 Button(
@@ -444,29 +493,29 @@ private fun AuthScreen(
                 AuthTitle("Регистрация")
 
                 Field(
-                    "Имя пользователя",
-                    username,
-                    onUsernameChange
+                    label = "Имя пользователя",
+                    value = username,
+                    change = onUsernameChange
                 )
 
                 Field(
-                    "Email",
-                    email,
-                    onEmailChange
+                    label = "Email",
+                    value = email,
+                    change = onEmailChange
                 )
 
                 Field(
-                    "Пароль",
-                    password,
-                    onPasswordChange,
-                    true
+                    label = "Пароль",
+                    value = password,
+                    change = onPasswordChange,
+                    password = true
                 )
 
                 Field(
-                    "Повтори пароль",
-                    repeatPassword,
-                    onRepeatPasswordChange,
-                    true
+                    label = "Повтори пароль",
+                    value = repeatPassword,
+                    change = onRepeatPasswordChange,
+                    password = true
                 )
 
                 Button(
@@ -507,7 +556,9 @@ private fun AuthScreen(
 
         if (message.isNotEmpty()) {
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(
+                modifier = Modifier.height(14.dp)
+            )
 
             Text(message)
         }
@@ -515,14 +566,16 @@ private fun AuthScreen(
 }
 
 @Composable
-private fun AuthTitle(t: String) {
+private fun AuthTitle(title: String) {
 
     Text(
-        t,
+        text = title,
         style = MaterialTheme.typography.headlineSmall
     )
 
-    Spacer(Modifier.height(14.dp))
+    Spacer(
+        modifier = Modifier.height(14.dp)
+    )
 }
 
 @Composable
@@ -536,25 +589,31 @@ private fun Field(
     OutlinedTextField(
         value = value,
         onValueChange = change,
+
         label = {
             Text(label)
         },
+
         singleLine = true,
+
         visualTransformation =
             if (password)
                 PasswordVisualTransformation()
             else
-                androidx.compose.ui.text.input.VisualTransformation.None,
+                VisualTransformation.None,
+
         modifier = Modifier.fillMaxWidth()
     )
 
-    Spacer(Modifier.height(10.dp))
+    Spacer(
+        modifier = Modifier.height(10.dp)
+    )
 }
 
 @Composable
 private fun PocketShell(
-    onLogout: () -> Unit,
-    context: Context
+    context: Context,
+    onLogout: () -> Unit
 ) {
 
     val store = remember {
@@ -589,38 +648,41 @@ private fun PocketShell(
 
             NavigationBar {
 
-                listOf(
-                    "🏠" to "Главная",
-                    "🐾" to "Заметки",
-                    "⭐" to "Избранное",
-                    "⚙️" to "Настройки"
-                ).forEachIndexed { i, pair ->
+                val navigationItems =
+                    listOf(
+                        "🏠" to "Главная",
+                        "🐾" to "Заметки",
+                        "⭐" to "Избранное",
+                        "⚙️" to "Настройки"
+                    )
+
+                navigationItems.forEachIndexed { index, item ->
 
                     NavigationBarItem(
-                        selected = tab == i,
+                        selected = tab == index,
 
                         onClick = {
-                            tab = i
+                            tab = index
                         },
 
                         icon = {
-                            Text(pair.first)
+                            Text(item.first)
                         },
 
                         label = {
-                            Text(pair.second)
+                            Text(item.second)
                         }
                     )
                 }
             }
         }
 
-    ) { pad ->
+    ) { padding ->
 
         Box(
-            Modifier
+            modifier = Modifier
                 .fillMaxSize()
-                .padding(pad)
+                .padding(padding)
                 .padding(20.dp)
         ) {
 
@@ -629,16 +691,17 @@ private fun PocketShell(
                 0 -> {
 
                     HomeTab(
-                        notes.size,
-                        notes.count {
-                            it.favorite
-                        },
+                        notesCount = notes.size,
+                        favoritesCount =
+                            notes.count {
+                                it.favorite
+                            },
 
-                        {
+                        onNotes = {
                             tab = 1
                         },
 
-                        {
+                        onFavorites = {
                             tab = 2
                         }
                     )
@@ -647,31 +710,31 @@ private fun PocketShell(
                 1 -> {
 
                     NotesTab(
-                        notes,
+                        notes = notes,
 
-                        {
+                        onEdit = {
                             selected = it
                             dialog = true
                         },
 
-                        {
+                        onAdd = {
                             selected = null
                             dialog = true
                         },
 
-                        { n ->
+                        onUpdate = { note ->
 
                             save(
                                 notes.map {
-                                    if (it.id == n.id)
-                                        n
+                                    if (it.id == note.id)
+                                        note
                                     else
                                         it
                                 }
                             )
                         },
 
-                        { id ->
+                        onDelete = { id ->
 
                             save(
                                 notes.filterNot {
@@ -685,102 +748,26 @@ private fun PocketShell(
                 2 -> {
 
                     NotesTab(
-                        notes.filter {
-                            it.favorite
-                        },
+                        notes =
+                            notes.filter {
+                                it.favorite
+                            },
 
-                        {
+                        onEdit = {
                             selected = it
                             dialog = true
                         },
 
-                        {
+                        onAdd = {
                             tab = 1
                             selected = null
                             dialog = true
                         },
 
-                        { n ->
+                        onUpdate = { note ->
 
                             save(
                                 notes.map {
-                                    if (it.id == n.id)
-                                        n
-                                    else
-                                        it
-                                }
-                            )
-                        },
-
-                        { id ->
-
-                            save(
-                                notes.filterNot {
-                                    it.id == id
-                                }
-                            )
-                        },
-
-                        true
-                    )
-                }
-
-                3 -> {
-
-                    SettingsTab(onLogout)
-                }
-            }
-
-            if (dialog) {
-
-                NoteDialog(
-                    selected,
-
-                    { title, body ->
-
-                        val n =
-                            selected?.copy(
-                                title = title,
-                                body = body
-                            )
-                                ?: Note(
-                                    UUID.randomUUID().toString(),
-                                    title,
-                                    body,
-                                    false
-                                )
-
-                        save(
-                            if (selected == null)
-                                listOf(n) + notes
-                            else
-                                notes.map {
-                                    if (it.id == n.id)
-                                        n
-                                    else
-                                        it
-                                }
-                        )
-
-                        dialog = false
-                        selected = null
-                    },
-
-                    {
-                        dialog = false
-                        selected = null
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun Header(
-    title: String,
-    subtitle: String
-) {
-
-    Text(
-        titl
+                                    if (it.id == note.id)
+                                        note
+                                  
