@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.createSupabaseClient
 import kotlinx.coroutines.launch
@@ -34,8 +35,8 @@ private const val SUPABASE_KEY =
     "sb_publishable_sfyl1NWIgWGLFp6D50PtVg_4wX7m_KX"
 
 private val supabase = createSupabaseClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
+    supabaseUrl = SUPABASE_URL,
+    supabaseKey = SUPABASE_KEY
 ) {
     install(Auth)
 }
@@ -56,13 +57,11 @@ private class NoteStore(context: Context) {
         )
 
     fun load(): List<Note> = runCatching {
-
         val array = JSONArray(
             prefs.getString("notes", "[]") ?: "[]"
         )
 
         List(array.length()) { index ->
-
             val obj = array.getJSONObject(index)
 
             Note(
@@ -72,15 +71,12 @@ private class NoteStore(context: Context) {
                 favorite = obj.optBoolean("favorite", false)
             )
         }
-
     }.getOrDefault(emptyList())
 
     fun save(notes: List<Note>) {
-
         val array = JSONArray()
 
         notes.forEach { note ->
-
             array.put(
                 JSONObject().apply {
                     put("id", note.id)
@@ -100,7 +96,6 @@ private class NoteStore(context: Context) {
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
 
         setContent {
@@ -151,7 +146,6 @@ private fun RyxenPocketApp(context: Context) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-
         loggedIn = runCatching {
             supabase.auth.currentSessionOrNull() != null
         }.getOrDefault(false)
@@ -172,14 +166,12 @@ private fun RyxenPocketApp(context: Context) {
         ) {
 
             when {
-
                 !sessionChecked -> {
 
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-
                         Text(
                             text = "Мяу~ загружаем Ryxen Pocket 🐾"
                         )
@@ -248,7 +240,6 @@ private fun RyxenPocketApp(context: Context) {
                                 try {
 
                                     supabase.auth.signInWith(Email) {
-
                                         this.email = email.trim()
                                         this.password = password
                                     }
@@ -277,11 +268,8 @@ private fun RyxenPocketApp(context: Context) {
 
                                 try {
 
-                                    val cleanEmail =
-                                        email.trim()
-
-                                    val cleanUsername =
-                                        username.trim()
+                                    val cleanEmail = email.trim()
+                                    val cleanUsername = username.trim()
 
                                     when {
 
@@ -320,19 +308,15 @@ private fun RyxenPocketApp(context: Context) {
 
                                             supabase.auth.signUpWith(Email) {
 
-                                                this.email =
-                                                    cleanEmail
+                                                this.email = cleanEmail
+                                                this.password = password
 
-                                                this.password =
-                                                    password
-
-                                                data =
-                                                    buildJsonObject {
-                                                        put(
-                                                            "username",
-                                                            cleanUsername
-                                                        )
-                                                    }
+                                                data = buildJsonObject {
+                                                    put(
+                                                        "username",
+                                                        cleanUsername
+                                                    )
+                                                }
                                             }
 
                                             message =
@@ -370,13 +354,11 @@ private fun AuthScreen(
     repeatPassword: String,
     busy: Boolean,
     message: String,
-
     onModeChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onUsernameChange: (String) -> Unit,
     onRepeatPasswordChange: (String) -> Unit,
-
     onLogin: () -> Unit,
     onRegister: () -> Unit
 ) {
@@ -385,17 +367,17 @@ private fun AuthScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-
-        horizontalAlignment =
-            Alignment.CenterHorizontally,
-
-        verticalArrangement =
-            Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
 
         Text(
             text = "🐾 Ryxen Pocket",
             fontSize = 30.sp
+        )
+
+        Spacer(
+            modifier = Modifier.height(6.dp)
         )
 
         Text(
@@ -417,7 +399,6 @@ private fun AuthScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-
                     Text("✨ Войти")
                 }
 
@@ -431,7 +412,6 @@ private fun AuthScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-
                     Text("🐱 Регистрация")
                 }
             }
@@ -458,7 +438,6 @@ private fun AuthScreen(
                     enabled = !busy,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-
                     Text(
                         if (busy)
                             "Входим…"
@@ -473,7 +452,6 @@ private fun AuthScreen(
                     },
                     enabled = !busy
                 ) {
-
                     Text("Создать аккаунт")
                 }
 
@@ -483,7 +461,6 @@ private fun AuthScreen(
                     },
                     enabled = !busy
                 ) {
-
                     Text("Назад")
                 }
             }
@@ -523,7 +500,6 @@ private fun AuthScreen(
                     enabled = !busy,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-
                     Text(
                         if (busy)
                             "Создаём…"
@@ -538,7 +514,6 @@ private fun AuthScreen(
                     },
                     enabled = !busy
                 ) {
-
                     Text("У меня уже есть аккаунт")
                 }
 
@@ -548,7 +523,6 @@ private fun AuthScreen(
                     },
                     enabled = !busy
                 ) {
-
                     Text("Назад")
                 }
             }
@@ -589,19 +563,15 @@ private fun Field(
     OutlinedTextField(
         value = value,
         onValueChange = change,
-
         label = {
             Text(label)
         },
-
         singleLine = true,
-
         visualTransformation =
             if (password)
                 PasswordVisualTransformation()
             else
                 VisualTransformation.None,
-
         modifier = Modifier.fillMaxWidth()
     )
 
@@ -637,7 +607,6 @@ private fun PocketShell(
     }
 
     fun save(list: List<Note>) {
-
         notes = list
         store.save(list)
     }
@@ -692,6 +661,7 @@ private fun PocketShell(
 
                     HomeTab(
                         notesCount = notes.size,
+
                         favoritesCount =
                             notes.count {
                                 it.favorite
@@ -712,8 +682,8 @@ private fun PocketShell(
                     NotesTab(
                         notes = notes,
 
-                        onEdit = {
-                            selected = it
+                        onEdit = { note ->
+                            selected = note
                             dialog = true
                         },
 
@@ -725,11 +695,12 @@ private fun PocketShell(
                         onUpdate = { note ->
 
                             save(
-                                notes.map {
-                                    if (it.id == note.id)
+                                notes.map { current ->
+                                    if (current.id == note.id) {
                                         note
-                                    else
-                                        it
+                                    } else {
+                                        current
+                                    }
                                 }
                             )
                         },
@@ -753,8 +724,8 @@ private fun PocketShell(
                                 it.favorite
                             },
 
-                        onEdit = {
-                            selected = it
+                        onEdit = { note ->
+                            selected = note
                             dialog = true
                         },
 
@@ -767,7 +738,532 @@ private fun PocketShell(
                         onUpdate = { note ->
 
                             save(
-                                notes.map {
-                                    if (it.id == note.id)
+                                notes.map { current ->
+                                    if (current.id == note.id) {
                                         note
-                                  
+                                    } else {
+                                        current
+                                    }
+                                }
+                            )
+                        },
+
+                        onDelete = { id ->
+
+                            save(
+                                notes.filterNot {
+                                    it.id == id
+                                }
+                            )
+                        }
+                    )
+                }
+
+                3 -> {
+
+                    SettingsTab(
+                        onLogout = onLogout
+                    )
+                }
+            }
+        }
+    }
+
+    if (dialog) {
+
+        NoteDialog(
+            note = selected,
+
+            onDismiss = {
+                dialog = false
+            },
+
+            onSave = { title, body ->
+
+                if (selected == null) {
+
+                    save(
+                        notes + Note(
+                            id = UUID.randomUUID().toString(),
+                            title = title,
+                            body = body,
+                            favorite = false
+                        )
+                    )
+
+                } else {
+
+                    save(
+                        notes.map { note ->
+
+                            if (note.id == selected!!.id) {
+
+                                note.copy(
+                                    title = title,
+                                    body = body
+                                )
+
+                            } else {
+                                note
+                            }
+                        }
+                    )
+                }
+
+                dialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun HomeTab(
+    notesCount: Int,
+    favoritesCount: Int,
+    onNotes: () -> Unit,
+    onFavorites: () -> Unit
+) {
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement =
+            Arrangement.spacedBy(14.dp)
+    ) {
+
+        item {
+
+            Text(
+                text = "Привет, Риксен! 🐾",
+                style =
+                    MaterialTheme.typography.headlineMedium
+            )
+
+            Text(
+                text =
+                    "Добро пожаловать в твой маленький уголок :3",
+                color = Color(0xFF7B6B80)
+            )
+        }
+
+        item {
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
+
+                    Text(
+                        text = "🐾 Твои заметки",
+                        style =
+                            MaterialTheme.typography.titleLarge
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        text =
+                            "Всего заметок: $notesCount"
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(14.dp)
+                    )
+
+                    Button(
+                        onClick = onNotes
+                    ) {
+                        Text("Открыть заметки →")
+                    }
+                }
+            }
+        }
+
+        item {
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
+
+                    Text(
+                        text = "⭐ Избранное",
+                        style =
+                            MaterialTheme.typography.titleLarge
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    Text(
+                        text =
+                            "Избранных заметок: $favoritesCount"
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(14.dp)
+                    )
+
+                    OutlinedButton(
+                        onClick = onFavorites
+                    ) {
+                        Text("Посмотреть избранное →")
+                    }
+                }
+            }
+        }
+
+        item {
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+
+                Text(
+                    text =
+                        "✨ Ryxen Pocket\nмяу~ cute mode ON 🐱",
+
+                    modifier =
+                        Modifier.padding(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotesTab(
+    notes: List<Note>,
+    onEdit: (Note) -> Unit,
+    onAdd: () -> Unit,
+    onUpdate: (Note) -> Unit,
+    onDelete: (String) -> Unit
+) {
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+
+            horizontalArrangement =
+                Arrangement.SpaceBetween,
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = "🐾 Заметки",
+                style =
+                    MaterialTheme.typography.headlineSmall
+            )
+
+            Button(
+                onClick = onAdd
+            ) {
+                Text("+")
+            }
+        }
+
+        Spacer(
+            modifier = Modifier.height(14.dp)
+        )
+
+        if (notes.isEmpty()) {
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                Text(
+                    text =
+                        "Пока тут пусто… 🐱\nСоздай первую заметку!"
+                )
+            }
+
+        } else {
+
+            LazyColumn(
+                verticalArrangement =
+                    Arrangement.spacedBy(12.dp)
+            ) {
+
+                items(
+                    items = notes,
+                    key = { it.id }
+                ) { note ->
+
+                    NoteCard(
+                        note = note,
+
+                        onEdit = {
+                            onEdit(note)
+                        },
+
+                        onFavorite = {
+
+                            onUpdate(
+                                note.copy(
+                                    favorite =
+                                        !note.favorite
+                                )
+                            )
+                        },
+
+                        onDelete = {
+                            onDelete(note.id)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoteCard(
+    note: Note,
+    onEdit: () -> Unit,
+    onFavorite: () -> Unit,
+    onDelete: () -> Unit
+) {
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Text(
+                    text =
+                        note.title.ifBlank {
+                            "Без названия"
+                        },
+
+                    style =
+                        MaterialTheme.typography.titleMedium
+                )
+
+                TextButton(
+                    onClick = onFavorite
+                ) {
+
+                    Text(
+                        if (note.favorite)
+                            "⭐"
+                        else
+                            "☆"
+                    )
+                }
+            }
+
+            if (note.body.isNotBlank()) {
+
+                Spacer(
+                    modifier = Modifier.height(6.dp)
+                )
+
+                Text(
+                    text = note.body
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            Row {
+
+                TextButton(
+                    onClick = onEdit
+                ) {
+                    Text("Изменить")
+                }
+
+                TextButton(
+                    onClick = onDelete
+                ) {
+                    Text("Удалить")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoteDialog(
+    note: Note?,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
+
+    var title by remember(note?.id) {
+        mutableStateOf(
+            note?.title ?: ""
+        )
+    }
+
+    var body by remember(note?.id) {
+        mutableStateOf(
+            note?.body ?: ""
+        )
+    }
+
+    AlertDialog(
+
+        onDismissRequest = onDismiss,
+
+        title = {
+
+            Text(
+                if (note == null)
+                    "Новая заметка 🐾"
+                else
+                    "Изменить заметку ✨"
+            )
+        },
+
+        text = {
+
+            Column {
+
+                OutlinedTextField(
+                    value = title,
+
+                    onValueChange = {
+                        title = it
+                    },
+
+                    label = {
+                        Text("Название")
+                    },
+
+                    singleLine = true,
+
+                    modifier =
+                        Modifier.fillMaxWidth()
+                )
+
+                Spacer(
+                    modifier = Modifier.height(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = body,
+
+                    onValueChange = {
+                        body = it
+                    },
+
+                    label = {
+                        Text("Текст")
+                    },
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    minLines = 4
+                )
+            }
+        },
+
+        confirmButton = {
+
+            Button(
+                onClick = {
+                    onSave(
+                        title.trim(),
+                        body.trim()
+                    )
+                }
+            ) {
+                Text("Сохранить")
+            }
+        },
+
+        dismissButton = {
+
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Отмена")
+            }
+        }
+    )
+}
+@Composable
+private fun SettingsTab(
+    onLogout: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Text(
+                text = "⚙️ Настройки",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp)
+                ) {
+                    Text(
+                        text = "🐱 Ryxen Pocket",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Твой маленький пушистый уголок."
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    OutlinedButton(
+                        onClick = onLogout,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Выйти из аккаунта")
+                    }
+                }
+            }
+        }
+    }
+}
